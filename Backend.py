@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api")
 
 # ----- Auth config -----
 SECRET_KEY = os.getenv("JWT_SECRET", "dev-secret-change-me")
@@ -791,7 +791,7 @@ async def get_similar_jobs(
 
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_REDIRECT_URI = f"http://{API_BASE_URL}/google-callback"
+GOOGLE_REDIRECT_URI = f"{API_BASE_URL}/google-callback"
 
 @api_router.get("/google-login")
 def google_login():
@@ -817,7 +817,7 @@ def get_usernames(session: Session = Depends(get_session)):
     }
 async def _query_adzuna(term: str, limit: int = 3):
     async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.get(f"http://{API_BASE_URL}/adzuna", params={"q": term})
+        r = await client.get(f"{API_BASE_URL}/adzuna", params={"q": term})
         r.raise_for_status()
         data = r.json()
         return data[:limit]
