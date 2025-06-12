@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 
 export default function Listings({ setAlert }) {
+    const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+
     const [listings, setListings] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
@@ -11,7 +13,7 @@ export default function Listings({ setAlert }) {
         const employerId = employer?.id;
         if (!employer?.id) return setAlert({ type: "error", message: "Employer's listings not found." });
 
-        fetch(`http://localhost:8000/employers/${employerId}/listings`)
+        fetch(apiBaseUrl + `/employers/${employerId}/listings`)
             .then ((res) => res.json())
             .then((data) => {
                 setListings(data);
@@ -21,13 +23,13 @@ export default function Listings({ setAlert }) {
                 console.error("Failed to load employer's listings:", err);
                 setLoading(false);
             });
-    }, [setAlert]);
+    }, [setAlert, apiBaseUrl]);
 
     const handleDelete = async listingId => {
         if (!window.confirm("Are you sure you want to delete this job listing?")) return;
 
         try {
-            const res = await fetch(`http://localhost:8000/listings/${listingId}`, {
+            const res = await fetch(apiBaseUrl + `/listings/${listingId}`, {
                 method: "DELETE",
             });
             if (!res.ok) throw new Error("Failed to delete job listing");

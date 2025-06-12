@@ -2,20 +2,22 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function ApplicationDetail({ setAlert }) {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+
   const { id }   = useParams();                
   const [data,setData]   = useState(null);
   const [status,setStatus]=useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`http://localhost:8000/application/${id}`)
+    fetch(apiBaseUrl + `/application/${id}`)
       .then(r => r.json())
       .then(d => { setData(d); setStatus(d.application.status); })
       .catch(() => setAlert({ type: "error", message: "Unable to load application." }));
-  }, [id, setAlert]);
+  }, [id, setAlert, apiBaseUrl]);
 
   const saveStatus = () => {
-    fetch(`http://localhost:8000/application/${id}/status`,{
+    fetch(apiBaseUrl + `/application/${id}/status`,{
       method:"PUT",
       headers:{ "Content-Type":"application/json" },
       body:JSON.stringify({ status })

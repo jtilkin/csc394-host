@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function NewListing({ setAlert }) {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
@@ -27,7 +29,7 @@ export default function NewListing({ setAlert }) {
 
     try {
       setSubmitting(true);
-      const res = await fetch("http://localhost:8000/listings", {
+      const res = await fetch(apiBaseUrl + "/listings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -150,7 +152,7 @@ export default function NewListing({ setAlert }) {
               formData.append("employer_id", employer.id);
 
               try {
-                const res = await fetch("http://localhost:8000/upload_csv", {
+                const res = await fetch(apiBaseUrl + "/upload_csv", {
                   method: "POST",
                   body: formData,
                 });

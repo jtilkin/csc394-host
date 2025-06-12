@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 
 export default function Dashboard({ logout, showProfileEditor, setAlert }) {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+
   const [employer, setEmployer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [counts, setCounts] = useState({});
@@ -28,11 +30,11 @@ export default function Dashboard({ logout, showProfileEditor, setAlert }) {
   useEffect(() => {
       const employerId = employer?.id;
     if (!employerId) return;
-      fetch(`http://localhost:8000/applications/status/employer/${employerId}`)
+      fetch(apiBaseUrl + `/applications/status/employer/${employerId}`)
         .then(res => res.json())
         .then(setCounts)
         .catch(err => console.error("Failed to fetch application statuses", err));
-    }, [employer]);
+    }, [employer, apiBaseUrl]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -46,7 +48,7 @@ export default function Dashboard({ logout, showProfileEditor, setAlert }) {
 
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/employers/${employerId}`, {
+      const res = await fetch(apiBaseUrl + `/employers/${employerId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)

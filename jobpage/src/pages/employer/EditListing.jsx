@@ -2,6 +2,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 
 export default function EditListing({ setAlert }) {
+    const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+
     const { listingId } = useParams();
     const [submitting, setSubmitting] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -18,7 +20,7 @@ export default function EditListing({ setAlert }) {
     useEffect(() => {
         const fetchListings = async () => {
             try {
-                const res = await fetch(`http://localhost:8000/listings/${listingId}`);
+                const res = await fetch(apiBaseUrl + `/listings/${listingId}`);
                 if (!res.ok) throw new Error("Failed to fetch job listing");
                 const data = await res.json();
                 setForm({
@@ -37,7 +39,7 @@ export default function EditListing({ setAlert }) {
             }
         };
         fetchListings();
-    }, [listingId, navigate, setAlert]);
+    }, [listingId, navigate, setAlert, apiBaseUrl]);
 
     const handleChange = e => {
         const { name, value } = e.target;
@@ -48,7 +50,7 @@ export default function EditListing({ setAlert }) {
         e.preventDefault();
         setSubmitting(true);
         try {
-            const res = await fetch(`http://localhost:8000/listings/${listingId}`, {
+            const res = await fetch(apiBaseUrl + `/listings/${listingId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify( form ),

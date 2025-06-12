@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
 const Reset = ({ setAlert }) => {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+
   const [username, setUsername] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -11,7 +13,7 @@ const Reset = ({ setAlert }) => {
 
     try {
       // Step 1: Verify current password
-      const loginRes = await fetch("http://localhost:8000/login", {
+      const loginRes = await fetch(apiBaseUrl + "/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -27,7 +29,7 @@ const Reset = ({ setAlert }) => {
       }
 
       // Step 2: Update password
-      const resetRes = await fetch("http://localhost:8000/reset/password", {
+      const resetRes = await fetch(apiBaseUrl + "/reset/password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

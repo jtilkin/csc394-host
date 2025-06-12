@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Dashboard({ logout, showProfileEditor, setAlert }) {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -37,11 +39,11 @@ export default function Dashboard({ logout, showProfileEditor, setAlert }) {
   useEffect(() => {
     const userId = user?.id;
     if (!userId) return;
-    fetch(`http://localhost:8000/applications/status/user/${userId}`)
+    fetch(apiBaseUrl + `/applications/status/user/${userId}`)
       .then(res => res.json())
       .then(setCounts)
       .catch(err => console.error("Failed to fetch application statuses", err));
-  }, [user]);
+  }, [user, apiBaseUrl]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -55,7 +57,7 @@ export default function Dashboard({ logout, showProfileEditor, setAlert }) {
 
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/users/${userId}`, {
+      const res = await fetch(apiBaseUrl + `/users/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)

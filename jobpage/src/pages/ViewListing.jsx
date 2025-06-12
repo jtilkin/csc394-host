@@ -2,13 +2,15 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function ViewListing({ setAlert }) {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+
   const { id } = useParams();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:8000/jobcard")
+    fetch(apiBaseUrl + "/jobcard")
       .then((res) => res.json())
       .then((data) => {
         const match = data.find((l) => l.id.toString() === id);
@@ -24,7 +26,7 @@ export default function ViewListing({ setAlert }) {
         navigate("/home");
       })
       .finally(() => setLoading(false));
-  }, [id, navigate, setAlert]);
+  }, [id, navigate, setAlert, apiBaseUrl]);
 
   const handleApply = async () => {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -58,7 +60,7 @@ export default function ViewListing({ setAlert }) {
     };
 
     try {
-      const res = await fetch("http://localhost:8000/apply", {
+      const res = await fetch(apiBaseUrl + "/apply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

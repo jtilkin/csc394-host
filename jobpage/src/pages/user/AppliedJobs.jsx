@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function AppliedJobs() {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,12 +12,12 @@ export default function AppliedJobs() {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     if (!storedUser?.id) return;
 
-    fetch(`http://localhost:8000/applications/${storedUser.id}`)
+    fetch(apiBaseUrl + `/applications/${storedUser.id}`)
       .then(res => res.json())
       .then(data => setJobs(data))
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [apiBaseUrl]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A]">

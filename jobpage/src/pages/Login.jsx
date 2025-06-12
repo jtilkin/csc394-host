@@ -3,6 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import JbwButton from "../components/buttons";
 
 export default function Login({ setToken, setUser, setAlert }) {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+
   const nav = useNavigate();
 
   const [username, setUsername] = useState("");
@@ -16,7 +18,7 @@ export default function Login({ setToken, setUser, setAlert }) {
     body.append("password", password);
     body.append("grant_type", "password");
 
-    fetch("http://localhost:8000/login", {
+    fetch(apiBaseUrl + "/login", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,

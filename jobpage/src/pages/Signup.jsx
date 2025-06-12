@@ -3,6 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import JbwButton from "../components/buttons";
 
 export default function Signup({ setToken, setUser, setAlert }) {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+
   const nav = useNavigate();
 
   const [user, setUserInput] = useState("");
@@ -23,7 +25,7 @@ export default function Signup({ setToken, setUser, setAlert }) {
       ...(role === "employer" && { employer_name: employerName }),
     };
 
-    fetch("http://localhost:8000/signup", {
+    fetch(apiBaseUrl + "/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

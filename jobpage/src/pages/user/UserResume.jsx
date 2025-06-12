@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 
 export default function UserResume({ setAlert }) {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+  
   const [user, setUser] = useState(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -58,7 +60,7 @@ export default function UserResume({ setAlert }) {
 
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/users/${userId}`, {
+      const res = await fetch(apiBaseUrl + `/users/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)

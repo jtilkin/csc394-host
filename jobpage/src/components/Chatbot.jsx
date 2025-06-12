@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import JbwButton from "./buttons";
 
 export default function Chatbot({ searchHistory = [] }) {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+
   const [open, setOpen]     = useState(false);
   const [input, setInput]   = useState("");
   const [history, setHist]  = useState([]); 
@@ -23,7 +25,7 @@ export default function Chatbot({ searchHistory = [] }) {
     setHist(newHist);
     setInput("");
 
-    fetch("http://localhost:8000/chat", {
+    fetch(apiBaseUrl + "/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ history: newHist, search_history: searchHistory }),
