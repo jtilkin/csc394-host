@@ -5,7 +5,7 @@ import os
 
 from pydantic import BaseModel
 from fastapi import (
-    FastAPI, Depends, HTTPException, status, Request, Response, Query
+    FastAPI, APIRouter, Depends, HTTPException, status, Request, Response, Query
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
@@ -21,6 +21,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+
 # ----- Auth config -----
 SECRET_KEY = os.getenv("JWT_SECRET", "dev-secret-change-me")
 ALGORITHM = "HS256"
@@ -56,9 +58,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+api_router = APIRouter()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://13.58.125.108:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -151,7 +155,7 @@ class ChatRequest(BaseModel):
 
 
 # ----- Auth/user routes -----
-@app.post("/signup", status_code=status.HTTP_201_CREATED)
+@api_router.post("/signup", status_code=status.HTTP_201_CREATED)
 def signup(
     attempt: SignupAttempt,
     session: Session = Depends(get_session)
@@ -220,7 +224,7 @@ def signup(
     else:
         raise HTTPException(400, "Invalid role")
 
-@app.post("/login")
+@api_router.post("/login")
 def login(
     form: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session)
@@ -270,7 +274,7 @@ def login(
     raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
-@app.post("/reset/password")
+@api_router.post("/reset/password")
 def reset_password(
     data: dict,
     token: str = Depends(oauth2_scheme),
@@ -307,7 +311,7 @@ def reset_password(
     session.commit()
     return {"message": "Password updated successfully"}
 
-@app.post("/reset/username")
+@api_router.post("/reset/username")
 def reset_username(data: dict, session: Session = Depends(get_session)):
     email = data.get("email")  # or some identifier
     new_username = data.get("new_username")
@@ -321,7 +325,7 @@ def reset_username(data: dict, session: Session = Depends(get_session)):
     session.commit()
     return {"message": "Username updated successfully"}
 
-@app.post("/apply")
+@api_router.post("/apply")
 def apply_to_job(
     user_id: int = Body(...),
     employer_id: int = Body(...),
@@ -372,11 +376,11 @@ def apply_to_job(
     return {"message": "Application submitted", "application": application}
 
 # ----- User endpoints -----
-@app.get("/users", response_model=List[User])
+@api_router.get("/users", response_model=List[User])
 def read_users(session: Session = Depends(get_session)):
     return session.exec(select(User)).all()
 
-@app.get("/users/{user_id}", response_model=User)
+@api_router.get("/users/{user_id}", response_model=User)
 def read_user(user_id: int, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
     if not user:
@@ -384,7 +388,7 @@ def read_user(user_id: int, session: Session = Depends(get_session)):
     return user
 
 # PUT update a user (NEW)
-@app.put("/users/{user_id}")
+@api_router.put("/users/{user_id}")
 def update_user(user_id: int, updated_user: User, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
     if not user:
@@ -403,7 +407,7 @@ def update_user(user_id: int, updated_user: User, session: Session = Depends(get
     
     return user
 
-@app.delete("/users/{user_id}")
+@api_router.delete("/users/{user_id}")
 def delete_user(user_id: int, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
     if not user:
@@ -428,22 +432,22 @@ def get_current_user(
 
 
 # ----- Employer endpoints -----
-@app.post("/employers", response_model=Employer)
+@api_router.post("/employers", response_model=Employer)
 def create_employer(emp: Employer, session: Session = Depends(get_session)):
     session.add(emp); session.commit(); session.refresh(emp)
     return emp
 
-@app.get("/employers", response_model=List[Employer])
+@api_router.get("/employers", response_model=List[Employer])
 def read_employers(session: Session = Depends(get_session)):
     return session.exec(select(Employer)).all()
 
 # Get all job listings posted by an employer 
-@app.get("/employers/{employer_id}/listings", response_model=List[JobListing])
+@api_router.get("/employers/{employer_id}/listings", response_model=List[JobListing])
 def get_employer_listings(employer_id: int, session: Session = Depends(get_session)):
     return session.exec(select(JobListing).where(JobListing.employer_id == employer_id)).all()
 
 # GET all applications submitted to an employer
-@app.get("/employers/{employer_id}/applications")
+@api_router.get("/employers/{employer_id}/applications")
 def get_received_applications(employer_id: int, session: Session = Depends(get_session)):
     results = session.exec(
         select(Application, JobListing, User)
@@ -462,7 +466,7 @@ def get_received_applications(employer_id: int, session: Session = Depends(get_s
 
 
 # PUT update an employer
-@app.put("/employers/{employer_id}")
+@api_router.put("/employers/{employer_id}")
 def update_employer(employer_id: int, updated_employer: Employer, session: Session = Depends(get_session)):
     employer = session.get(Employer, employer_id)
     if not employer:
@@ -481,7 +485,7 @@ def update_employer(employer_id: int, updated_employer: Employer, session: Sessi
     
     return employer
 
-@app.delete("/employers/{employer_id}")
+@api_router.delete("/employers/{employer_id}")
 def delete_employer(employer_id: int, session: Session = Depends(get_session)):
     emp = session.get(Employer, employer_id)
     if not emp:
@@ -492,18 +496,18 @@ def delete_employer(employer_id: int, session: Session = Depends(get_session)):
 
 
 # ----- Listing endpoints -----
-@app.post("/listings", response_model=JobListing)
+@api_router.post("/listings", response_model=JobListing)
 def create_listing(lst: JobListing, session: Session = Depends(get_session)):
     session.add(lst); session.commit(); session.refresh(lst)
     return lst
 
 # GET all listings
-@app.get("/listings", response_model=List[JobListing])
+@api_router.get("/listings", response_model=List[JobListing])
 def get_listings(session: Session = Depends(get_session)):
     return session.exec(select(JobListing)).all()
 
 # GET all listings for job cards
-@app.get("/jobcard")
+@api_router.get("/jobcard")
 def get_listings(session: Session = Depends(get_session)):
     joined = session.exec(
         select(JobListing, Employer.employer_name).join(Employer, Employer.id == JobListing.employer_id)
@@ -518,7 +522,7 @@ def get_listings(session: Session = Depends(get_session)):
     return listings
 
 # GET listing by id
-@app.get("/listings/{listing_id}", response_model=JobListing)
+@api_router.get("/listings/{listing_id}", response_model=JobListing)
 def get_listing(listing_id: int, session: Session = Depends(get_session)):
     listing = session.get(JobListing, listing_id)
     if not listing:
@@ -526,7 +530,7 @@ def get_listing(listing_id: int, session: Session = Depends(get_session)):
     return listing
 
 # PUT update a listing
-@app.put("/listings/{listing_id}", response_model=JobListing)
+@api_router.put("/listings/{listing_id}", response_model=JobListing)
 def update_listing(listing_id: int, updated_listing: JobListing, session: Session = Depends(get_session)):
     listing = session.get(JobListing, listing_id)
     if not listing:
@@ -541,7 +545,7 @@ def update_listing(listing_id: int, updated_listing: JobListing, session: Sessio
     session.refresh(listing)
     return listing
 
-@app.delete("/listings/{listing_id}")
+@api_router.delete("/listings/{listing_id}")
 def delete_listing(listing_id: int, session: Session = Depends(get_session)):
     lst = session.get(JobListing, listing_id)
     if not lst:
@@ -555,16 +559,16 @@ def delete_listing(listing_id: int, session: Session = Depends(get_session)):
 
 
 # ----- Application endpoints -----
-@app.post("/applications", response_model=Application)
+@api_router.post("/applications", response_model=Application)
 def create_application(application: Application, session: Session = Depends(get_session)):
     session.add(application); session.commit(); session.refresh(application)
     return application
 
-@app.get("/applications", response_model=List[Application])
+@api_router.get("/applications", response_model=List[Application])
 def read_application(session: Session = Depends(get_session)):
     return session.exec(select(Application)).all()
 
-@app.get("/applications/{user_id}")
+@api_router.get("/applications/{user_id}")
 def get_applications(user_id: int, session: Session = Depends(get_session)):
     results = session.exec(
         select(Application, JobListing, Employer.employer_name)
@@ -584,7 +588,7 @@ def get_applications(user_id: int, session: Session = Depends(get_session)):
 
     return listings
 
-@app.get("/applications/status/user/{user_id}")
+@api_router.get("/applications/status/user/{user_id}")
 def get_application_status(user_id: int, session: Session = Depends(get_session)):
     statuses = ["Submitted", "Under Review", "Interview", "Rejected", "Accepted"]
     results = {}
@@ -603,7 +607,7 @@ def get_application_status(user_id: int, session: Session = Depends(get_session)
     results["Total"] = total
     return results
 
-@app.get("/applications/status/employer/{employer_id}")
+@api_router.get("/applications/status/employer/{employer_id}")
 def get_application_status(employer_id: int, session: Session = Depends(get_session)):
     statuses = ["Submitted", "Under Review", "Interview", "Rejected", "Accepted"]
     results = {}
@@ -622,7 +626,7 @@ def get_application_status(employer_id: int, session: Session = Depends(get_sess
     results["Total"] = total
     return results
 
-@app.delete("/applications/{application_id}")
+@api_router.delete("/applications/{application_id}")
 def delete_application(application_id: int, session: Session = Depends(get_session)):
     application = session.get(Application, application_id)
     if not application:
@@ -630,7 +634,7 @@ def delete_application(application_id: int, session: Session = Depends(get_sessi
     session.delete(application); session.commit()
     return {"ok": True}
 
-@app.get("/application/{app_id}")
+@api_router.get("/application/{app_id}")
 def application_detail(app_id: int, session: Session = Depends(get_session)):
     rec = session.exec(
         select(Application, JobListing, User)
@@ -664,7 +668,7 @@ def application_detail(app_id: int, session: Session = Depends(get_session)):
         }
     }
 
-@app.put("/application/{app_id}/status")
+@api_router.put("/application/{app_id}/status")
 def update_application_status(
     app_id: int,
     status: str = Body(..., embed=True),
@@ -683,7 +687,7 @@ def update_application_status(
 
 
 # ----- DB Search -----
-@app.get("/search")
+@api_router.get("/search")
 def search_listings(q: str = Query(...), session: Session = Depends(get_session)):
     query_lower = f"%{q.lower()}%"
     stmt = select(JobListing, Employer.employer_name).join(Employer, JobListing.employer_id == Employer.id).where(
@@ -712,7 +716,7 @@ def search_listings(q: str = Query(...), session: Session = Depends(get_session)
 ADZUNA_APP_ID = "b93f0af2"
 ADZUNA_APP_KEY = "ac2968e9aa37b2d474d60277da360974"
 
-@app.get("/adzuna")
+@api_router.get("/adzuna")
 async def get_adzuna_jobs(q: str):
     import httpx
     url = "https://api.adzuna.com/v1/api/jobs/us/search/1"
@@ -742,7 +746,7 @@ async def get_adzuna_jobs(q: str):
         ]
 
 
-@app.get("/remote")
+@api_router.get("/remote")
 async def remote_search(q: str, limit: int = 10):
     jobs = (await _query_remotive({"search": q, "limit": limit}))[:limit]
     return [
@@ -758,7 +762,7 @@ async def remote_search(q: str, limit: int = 10):
         for idx, j in enumerate(jobs, start=1)
     ]
 
-@app.get("/listings/{listing_id}/similar")
+@api_router.get("/listings/{listing_id}/similar")
 async def get_similar_jobs(
     listing_id: int,
     limit: int = 5,
@@ -787,9 +791,9 @@ async def get_similar_jobs(
 
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_REDIRECT_URI = "http://localhost:8000/google-callback"
+GOOGLE_REDIRECT_URI = f"http://{API_BASE_URL}/google-callback"
 
-@app.get("/google-login")
+@api_router.get("/google-login")
 def google_login():
     url = (
         "https://accounts.google.com/o/oauth2/v2/auth"
@@ -799,12 +803,12 @@ def google_login():
     )
     return RedirectResponse(url)
 
-@app.get("/google-callback")
+@api_router.get("/google-callback")
 def google_callback(code: str):
     # still needa implement the google authentication
     return {"detail": "Google OAuth flow not implemented in this demo"}
 
-@app.get("/debug/usernames")
+@api_router.get("/debug/usernames")
 def get_usernames(session: Session = Depends(get_session)):
     users = session.exec(select(User)).all()
     employers = session.exec(select(Employer)).all()
@@ -813,12 +817,12 @@ def get_usernames(session: Session = Depends(get_session)):
     }
 async def _query_adzuna(term: str, limit: int = 3):
     async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.get("http://localhost:8000/adzuna", params={"q": term})
+        r = await client.get(f"http://{API_BASE_URL}/adzuna", params={"q": term})
         r.raise_for_status()
         data = r.json()
         return data[:limit]
 
-@app.post("/chat")
+@api_router.post("/chat")
 async def chat(req: ChatRequest):
     system_prompt = (
         "You are Jobby, a concise, friendly job-search assistant. "
@@ -879,7 +883,7 @@ async def chat(req: ChatRequest):
 import csv
 from fastapi import UploadFile, File
 
-@app.post("/upload_csv")
+@api_router.post("/upload_csv")
 async def upload_csv(
     employer_id: int = Body(...),
     file: UploadFile = File(...),
@@ -910,3 +914,6 @@ async def upload_csv(
     session.commit()
     return {"message": f"{count} job listings uploaded successfully"}
 
+
+
+app.include_router(api_router, prefix="/api")
